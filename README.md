@@ -60,9 +60,13 @@ Volitelná písma Google mají systémovou náhradu. Offline instalace a synchro
 
 ## Obtížnost a nekonečné úrovně
 
-Cyklus se opakuje po pěti úrovních: **Oddech → Běžná → Běžná → Těžká → Výzva**. Základní počet barev roste z 3 na 4 od úrovně 16, na 5 od 46 a na 6 od 111. Těžká kola a výzvy mají o barvu více (nejvýše 6), takže první čtvrtá barva přijde už ve 4. úrovni. Oddechová kola mají později o barvu méně. Počet barev se dál nezvyšuje, čísla úrovní pokračují i za 1000 a 10000.
+Cyklus se opakuje po pěti úrovních: **Oddech → Běžná → Běžná → Těžká → Výzva**. První dva cykly mají 5 / 6 / 6 / 7 / 8 barev, od úrovně 11 pak 6 / 7 / 7 / 8 / 8. Přibyly tyrkysová a měděná. Čísla úrovní pokračují i za 1000 a 10000.
 
-Generátor míří na 1,35násobek předchozího skóre složitosti. Vybírá mezi rozloženími vytvořenými obrácenými tahy a více promíchanými plnými lahvičkami, jejichž řešení předem ověří omezeným hledáním. Když hledání nepomůže, má vždy k dispozici konstruktivně řešitelnou variantu. Skóre dál používá stejnou fragmentaci, ukryté barvy a délku známého řešení; samotné číslo skóre se nenásobí. Kontrola prvních 1 000 úrovní vůči revizi `0cc8659` naměřila +33,93 %, prvních dvaceti +35,26 %. Jde o odhad obtížnosti, ne záruku stejného nárůstu subjektivní náročnosti nebo optimálního počtu tahů. Rozehrané uložené kolo včetně jeho počátečního rozložení se zachová; nová křivka platí pro další úrovně.
+Nové úrovně mají jen **jednu lahvičku volné kapacity** místo dvou. Tato kapacita může být rozdělená mezi částečně naplněné lahvičky. Cílem je více nutného plánování a nevratných slepých cest, nikoliv pouze vyšší počet promíchaných vrstev.
+
+Generátor vybírá až z 384 deterministických kandidátů podle počtu stavů, které při řešení prozkoumá stejný řešič, a minimální délky nalezeného řešení. Cílová práce řešiče v cyklu je 40 / 60 / 75 / 95 / 130 stavů. Přijímá jen ověřené výsledky a má záložní konstruktivně řešitelnou variantu. Kontrola prvních 1 000 úrovní proti revizi `539fd0c` naměřila **2,90× více prozkoumaných stavů** (68,093 místo 23,48 na úroveň), v prvních dvaceti 5,06×. To je reprodukovatelná zástupná metrika náročnosti plánování, nikoliv záruka trojnásobného času pro lidského hráče nebo trojnásobné délky řešení.
+
+Rozehrané kolo, jeho historie, koupené pomůcky i počáteční rozložení zůstávají při aktualizaci zachované. Nová obtížnost se použije automaticky na další úroveň. Rozhraní nedostává žádná další tlačítka.
 
 ## Odměny a obchod
 
@@ -71,10 +75,10 @@ První dokončení úrovně přinese **10 / 10 / 10 / 15 / 25 mincí** podle cyk
 - Nápověda **10**: řešič běží ve Web Workeru. Cena se strhne až po přijetí ověřené rady. Případný návrat nebo restart vyžaduje výslovné přijetí popsaného výsledku. Při limitu hledání se stav neoznačuje za prokazatelně neřešitelný. Zaplacená rada zůstane zvýrazněná i po načtení hry.
 - Malá lahvička **25**: kapacita 1 dílek; při dokončení musí být prázdná.
 - Prázdná lahvička **60**: kapacita 4 dílky.
-- Zpět a restart jsou zdarma. Jednu přídavnou lahvičku každé velikosti lze koupit na úroveň. Zůstávají po restartu i obnovení stránky a zmizí až při přechodu na další úroveň. Plocha podporuje až 10 lahviček.
+- Zpět a restart jsou zdarma. Jednu přídavnou lahvičku každé velikosti lze koupit na úroveň. Zůstávají po restartu i obnovení stránky a zmizí až při přechodu na další úroveň. Nové úrovně mají 6 až 9 základních lahviček, s oběma pomůckami nejvýše 11.
 
 Trvalé vzhledy lze kombinovat a přepínat bez dalšího placení: **ametystové sklo 150**, **zlaté podložky 200**, **polární záře 300**, **jiskřivý proud 500**. Každou kategorii lze vrátit na výchozí vzhled.
 
-Ukládání dál používá `sortie-save-v1`, formát dat je verze 2. Migrace zachovává starý stav, peněženku a historii; starý generátor je zmrazený pro obnovu původního rozložení. Nové hry navíc ukládají počáteční rozložení, kapacity, známá řešení, zakoupené vzhledy a vybavení. Již dokončené úrovně se zpětně neodměňují.
+Ukládání dál používá `sortie-save-v1`, formát dat je verze 3. Migrace zachovává starý stav, peněženku a historii; starý generátor je zmrazený pro obnovu původního rozložení. Nové hry ukládají počáteční rozložení, kapacity, počet základních lahviček, verzi generátoru, známá řešení, zakoupené vzhledy a vybavení. Migrace rozlišuje starší dvě volné kapacity od nových jedné a neúčtuje znovu již koupené pomocné lahvičky. Již dokončené úrovně se zpětně neodměňují.
 
 `src/rules.ts` obsahuje společná pravidla, `src/solver.ts` řešič a `src/hints.ts` nabídku ověřeného návratu; `src/Shop.tsx` obchod. Testy v `src/economy.test.ts` a `tests/shop.spec.ts` pokrývají migraci, pomocné lahvičky, odměny, nápovědy, vzhledy a přetrvání nákupů.

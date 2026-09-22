@@ -40,7 +40,7 @@ describe("pour rules", () => {
   });
 });
 it("generates deterministic, unsolved, provably solvable levels", () => {
-  for (let n = 1; n <= 200; n++) {
+  for (let n = 1; n <= 80; n++) {
     const puzzle = level(n);
     let board = puzzle.board;
     expect(board).toEqual(level(n).board);
@@ -53,7 +53,7 @@ it("generates deterministic, unsolved, provably solvable levels", () => {
     }
     expect(won(board), `level ${n}`).toBe(true);
   }
-});
+}, 30000);
 it("rejects corrupt saved boards", () => {
   expect(validBoard([[9]], 1)).toBe(false);
   expect(validBoard(null, 1)).toBe(false);

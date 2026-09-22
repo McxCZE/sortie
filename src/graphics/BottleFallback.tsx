@@ -77,7 +77,7 @@ export default function BottleFallback({
                 opacity=".52"
                 fontSize="13"
               >
-                {["✦", "●", "◆", "♥", "☾", "✳"][color]}
+                {["✦", "●", "◆", "♥", "☾", "✳", "▲", "■"][color]}
               </text>
             </g>
           ))}

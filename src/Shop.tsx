@@ -15,7 +15,7 @@ export default function Shop({
   onHint: () => void;
 }) {
   const [tab, setTab] = useState<"tools" | "looks">("tools");
-  const extras = game.capacities.slice(new Set(game.board.flat()).size + 2),
+  const extras = game.capacities.slice(game.baseBottleCount),
     finished = won(game.board, game.capacities);
   return (
     <Dialog title="Obchod" wide onClose={onClose}>

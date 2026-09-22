@@ -93,5 +93,5 @@ test("reference-style interface stays usable across phone orientations", async (
   await page
     .getByRole("button", { name: "Začít úroveň znovu", exact: true })
     .click();
-  await expect(page.locator(".bottle")).toHaveCount(10);
+  await expect(page.locator(".bottle")).toHaveCount(save.baseBottleCount + 2);
 });

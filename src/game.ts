@@ -17,6 +17,8 @@ export const COLORS = [
   "#f44798",
   "#3c9eff",
   "#f6cc32",
+  "#15d6ec",
+  "#b96945",
 ];
 export const NAMES = [
   "levandulová",
@@ -25,6 +27,8 @@ export const NAMES = [
   "růžová",
   "modrá",
   "zlatá",
+  "tyrkysová",
+  "měděná",
 ];
 export const LEVEL_REWARD = 10;
 export const PRICES = { hint: 10, small: 25, large: 60 } as const;
@@ -48,17 +52,14 @@ export function levelInfo(number: number) {
           : phase === 4
             ? "challenge"
             : "normal";
-  const base = number >= 111 ? 6 : number >= 46 ? 5 : number >= 16 ? 4 : 3;
+  const colors = (number < 11 ? [5, 6, 6, 7, 8] : [6, 7, 7, 8, 8])[phase];
   return {
     difficulty,
     ...DIFFICULTIES[difficulty],
-    colors:
-      difficulty === "easy"
-        ? Math.max(3, base - 1)
-        : difficulty === "hard" || difficulty === "challenge"
-          ? Math.min(6, base + 1)
-          : base,
+    colors,
     phase,
+    spareBottles: 1,
+    searchTarget: [40, 60, 75, 95, 130][phase],
   };
 }
 export type LookCategory = "glass" | "base" | "background" | "effect";
@@ -115,7 +116,7 @@ function scramble(colors: number, seed: number, steps: number) {
   };
   const board: Board = Array.from({ length: colors }, (_, i) =>
     Array<number>(4).fill(i),
-  ).concat([[], []]);
+  ).concat([[]]);
   let solution: Move[] = [];
   const seen = new Map<string, Move[]>();
   seen.set(boardKey(board), []);
@@ -162,36 +163,6 @@ export function puzzleScore(board: Board, moves: number) {
   );
   return fragments * 5 + buried * 3 + moves * 0.15;
 }
-function reverseCandidates(number: number, colors: number) {
-  const candidates: ReturnType<typeof scramble>[] = [];
-  for (let i = 0; i < 12; i++) {
-    const candidate = scramble(
-      colors,
-      seedFor(`${number}:${i}`),
-      18 + i * 10 + colors * 4,
-    );
-    if (!won(candidate.board)) candidates.push(candidate);
-  }
-  return candidates.sort((a, b) => a.score - b.score);
-}
-// The previous curve is retained as a stable calibration reference, not as a difficulty multiplier on the score itself.
-function previousTarget(number: number) {
-  const { difficulty, phase } = levelInfo(number),
-    base = number >= 201 ? 6 : number >= 81 ? 5 : number >= 21 ? 4 : 3;
-  const colors = difficulty === "easy" ? Math.max(3, base - 1) : base;
-  const candidates = reverseCandidates(number, colors);
-  const percentile =
-    difficulty === "easy"
-      ? 0
-      : difficulty === "hard"
-        ? 0.85
-        : difficulty === "challenge"
-          ? 1
-          : phase === 1
-            ? 0.4
-            : 0.6;
-  return candidates[Math.floor((candidates.length - 1) * percentile)].score;
-}
 function shuffledBoard(colors: number, seed: number, distinct: boolean): Board {
   let state = seed;
   const random = (n: number) => {
@@ -213,46 +184,59 @@ function shuffledBoard(colors: number, seed: number, distinct: boolean): Board {
     }
     board.push(b);
   }
-  return [...board, [], []];
+  return [...board, []];
 }
-export const DIFFICULTY_BOOST = 1.35;
-const cache = new Map<number, ReturnType<typeof scramble>>();
-export function level(number: number) {
+export const DIFFICULTY_GENERATION = 3;
+export type Puzzle = {
+  board: Board;
+  solution: Move[];
+  score: number;
+  searchEffort: number;
+};
+const cache = new Map<number, Puzzle>();
+export function level(number: number): Puzzle {
   const cached = cache.get(number);
   if (cached) return structuredClone(cached);
   const info = levelInfo(number),
-    target = previousTarget(number) * DIFFICULTY_BOOST;
-  const certified = reverseCandidates(number, info.colors);
-  let best = certified.reduce((a, b) =>
-    Math.abs(b.score - target) < Math.abs(a.score - target) ? b : a,
-  );
-  const boards = Array.from({ length: 40 }, (_, i) =>
-    shuffledBoard(info.colors, seedFor(`harder:${number}:${i}`), i >= 20),
-  );
-  boards.sort(
-    (a, b) =>
-      Math.abs(puzzleScore(a, info.colors * 4) - target) -
-      Math.abs(puzzleScore(b, info.colors * 4) - target),
-  );
-  for (const board of boards.slice(0, 5)) {
+    target = info.searchTarget;
+  let best: Puzzle | null = null,
+    fallback: Puzzle | null = null;
+  for (let i = 0; i < 384; i++) {
+    const seed = seedFor(`expert:${number}:${i}`);
+    const reverse = i % 4 !== 0 ? scramble(info.colors, seed, 120) : null;
+    const board =
+      reverse?.board ?? shuffledBoard(info.colors, seed, i % 8 === 0);
     const result = solve(
       board,
       board.map(() => 4),
-      25000,
+      6000,
     );
+    if (reverse && !fallback)
+      fallback = { ...reverse, searchEffort: result.visited };
     if (result.status !== "solved" || !result.path.length) continue;
     const candidate = {
       board,
       solution: result.path,
       score: puzzleScore(board, result.path.length),
+      searchEffort: result.visited,
     };
-    if (Math.abs(candidate.score - target) < Math.abs(best.score - target))
+    if (!fallback || candidate.solution.length > fallback.solution.length)
+      fallback = candidate;
+    if (result.path.length < Math.ceil(info.colors * 2.5)) continue;
+    if (
+      !best ||
+      Math.abs(candidate.searchEffort - target) <
+        Math.abs(best.searchEffort - target)
+    )
       best = candidate;
-    if (Math.abs(best.score - target) <= target * 0.025) break;
+    if (Math.abs(best.searchEffort - target) < target * 0.05) break;
   }
-  cache.set(number, best);
+  const result = best ?? fallback;
+  if (!result || won(result.board))
+    throw new Error("Nepodařilo se připravit řešitelnou úroveň.");
+  cache.set(number, result);
   if (cache.size > 30) cache.delete(cache.keys().next().value!);
-  return structuredClone(best);
+  return structuredClone(result);
 }
 // Frozen generator used only to recover the starting layout of pre-upgrade saves.
 export function legacyLevel(number: number) {
@@ -293,7 +277,9 @@ export function legacyLevel(number: number) {
   return { board, solution };
 }
 export type Save = {
-  version: 2;
+  version: 3;
+  generation: number;
+  baseBottleCount: number;
   level: number;
   board: Board;
   initial: Board;
@@ -314,7 +300,9 @@ export function createGame(number = 1): Save {
   const puzzle = level(number),
     info = levelInfo(number);
   return {
-    version: 2,
+    version: 3,
+    generation: DIFFICULTY_GENERATION,
+    baseBottleCount: puzzle.board.length,
     level: number,
     board: puzzle.board,
     initial: structuredClone(puzzle.board),
@@ -387,7 +375,7 @@ export function nextLevel(save: Save): Save {
 }
 export function buyBottle(save: Save, kind: "small" | "large"): Save {
   const capacity = kind === "small" ? 1 : 4,
-    baseCount = new Set(save.board.flat()).size + 2;
+    baseCount = save.baseBottleCount;
   if (
     won(save.board, save.capacities) ||
     save.coins < PRICES[kind] ||
@@ -427,8 +415,8 @@ export function validBoard(
     !Number.isSafeInteger(number) ||
     number < 1 ||
     !Array.isArray(value) ||
-    value.length < 5 ||
-    value.length > 10
+    value.length < 4 ||
+    value.length > 12
   )
     return false;
   if (capacities && capacities.length !== value.length) return false;
@@ -437,13 +425,13 @@ export function validBoard(
       (b, i) =>
         Array.isArray(b) &&
         b.length <= (capacities?.[i] ?? 4) &&
-        b.every((c) => Number.isInteger(c) && c >= 0 && c < 6),
+        b.every((c) => Number.isInteger(c) && c >= 0 && c < COLORS.length),
     )
   )
     return false;
   const colors = new Set<number>(value.flat());
-  if (colors.size < 3 || colors.size > 6) return false;
-  if (value.length < colors.size + 2 || value.length > colors.size + 4)
+  if (colors.size < 3 || colors.size > COLORS.length) return false;
+  if (value.length < colors.size + 1 || value.length > colors.size + 4)
     return false;
   return Array.from(
     { length: colors.size },
@@ -475,8 +463,13 @@ export function restore(): Save {
         ? s.capacities
         : s.board?.map(() => 4);
     if (!caps || !validBoard(s.board, s.level, caps)) return createGame();
-    const baseCount = new Set(s.board.flat()).size + 2,
-      extras = caps.slice(baseCount);
+    const colorCount = new Set(s.board.flat()).size;
+    const baseCount =
+      Number.isInteger(s.baseBottleCount) &&
+      [colorCount + 1, colorCount + 2].includes(s.baseBottleCount)
+        ? s.baseBottleCount
+        : Math.min(colorCount + 2, caps.length);
+    const extras = caps.slice(baseCount);
     if (
       !caps.slice(0, baseCount).every((n: number) => n === 4) ||
       extras.length > 2 ||
@@ -491,7 +484,10 @@ export function restore(): Save {
         : [];
     let initial: Board,
       initialSolution: Move[] | null = null;
-    if (s.version === 2 && validBoard(s.initial, s.level, caps))
+    if (
+      (s.version === 2 || s.version === 3) &&
+      validBoard(s.initial, s.level, caps)
+    )
       initial = s.initial;
     else {
       const original = legacyLevel(s.level),
@@ -537,11 +533,15 @@ export function restore(): Save {
         equipment[item.category] = item.id;
     const info = levelInfo(s.level),
       difficulty: Difficulty =
-        s.version === 2 && Object.hasOwn(DIFFICULTIES, s.difficulty)
+        (s.version === 2 || s.version === 3) &&
+        Object.hasOwn(DIFFICULTIES, s.difficulty)
           ? s.difficulty
           : info.difficulty;
     return {
-      version: 2,
+      version: 3,
+      generation:
+        s.generation === DIFFICULTY_GENERATION ? DIFFICULTY_GENERATION : 2,
+      baseBottleCount: baseCount,
       level: s.level,
       board: s.board,
       initial,

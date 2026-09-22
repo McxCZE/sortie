@@ -62,8 +62,10 @@ const LIQUID_COLORS = [
   "#ec267a",
   "#1688ef",
   "#edbe08",
+  "#00c9e5",
+  "#8e472b",
 ];
-const SYMBOLS = ["✦", "●", "◆", "♥", "☾", "✳"];
+const SYMBOLS = ["✦", "●", "◆", "♥", "☾", "✳", "▲", "■"];
 function layout(count: number, wide: boolean) {
   const columns = wide ? count : count > 6 ? 4 : 3;
   const rows = Math.ceil(count / columns),

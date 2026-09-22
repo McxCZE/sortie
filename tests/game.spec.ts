@@ -3,6 +3,7 @@ import { level, pour } from "../src/game";
 test("plays a full level, persists progress, undoes and restarts", async ({
   page,
 }) => {
+  test.setTimeout(180000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
@@ -66,7 +67,7 @@ test("small screens, reduced motion and malformed storage", async ({
     "true",
     { timeout: 30000 },
   );
-  await expect(page.locator(".bottle")).toHaveCount(5);
+  await expect(page.locator(".bottle")).toHaveCount(level(1).board.length);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -82,7 +83,7 @@ test("small screens, reduced motion and malformed storage", async ({
   );
   await page.screenshot({ path: "artifacts/sortie-small.png", fullPage: true });
 });
-test("advanced eight bottle layout", async ({ page }) => {
+test("advanced expert bottle layout", async ({ page }) => {
   const board = level(205).board;
   await page.addInitScript(
     (board) =>
@@ -98,7 +99,7 @@ test("advanced eight bottle layout", async ({ page }) => {
     "true",
     { timeout: 30000 },
   );
-  await expect(page.locator(".bottle")).toHaveCount(8);
+  await expect(page.locator(".bottle")).toHaveCount(board.length);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,

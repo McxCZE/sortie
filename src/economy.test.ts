@@ -15,9 +15,10 @@ import {
   restartLevel,
   restore,
   won,
+  legacyLevel,
 } from "./game";
 import { findHint, solve } from "./hints";
-import { difficultyBaseline } from "./fixtures/difficulty-v1";
+import { legacySave } from "./fixtures/legacy-save";
 afterEach(() => vi.unstubAllGlobals());
 
 describe("endless difficulty cycle", () => {
@@ -30,7 +31,7 @@ describe("endless difficulty cycle", () => {
       expect(puzzle).toEqual(level(n));
       expect(won(puzzle.board)).toBe(false);
       expect(followsSolution(puzzle.board, puzzle.solution)).toBe(true);
-      expect(puzzle.board.length).toBeLessThanOrEqual(8);
+      expect(puzzle.board.length).toBeLessThanOrEqual(9);
     }
   });
   it("selects more fragmented challenges on average and eases the next cycle", () => {
@@ -43,21 +44,52 @@ describe("endless difficulty cycle", () => {
     expect(hard).toBeGreaterThan(easy * 1.15);
   });
 });
-it("raises measured complexity about 35% across 1000 certified levels", () => {
-  for (const range of difficultyBaseline) {
-    let score = 0;
-    for (let n = range.from; n <= range.to; n++) {
-      const puzzle = level(n);
-      score += puzzle.score;
-      expect(followsSolution(puzzle.board, puzzle.solution)).toBe(true);
-      expect(won(puzzle.board)).toBe(false);
-    }
-    expect(score / range.scoreSum).toBeGreaterThan(1.3);
-    expect(score / range.scoreSum).toBeLessThan(1.4);
+it("starts with five to eight colours and only one bottle of spare capacity", () => {
+  expect([1, 2, 3, 4, 5].map((n) => levelInfo(n).colors)).toEqual([
+    5, 6, 6, 7, 8,
+  ]);
+  for (const n of [1, 2, 5, 11, 25, 100, 205, 1000, 10001]) {
+    const g = createGame(n),
+      colors = new Set(g.board.flat()).size;
+    expect(g.baseBottleCount).toBe(colors + 1);
+    expect(
+      g.capacities.reduce((s, n) => s + n, 0) - g.board.flat().length,
+    ).toBe(4);
+    expect(followsSolution(g.board, g.solution, g.capacities)).toBe(true);
   }
-  expect(levelInfo(4).colors).toBe(4);
-  expect(levelInfo(17).colors).toBe(4);
-  expect(levelInfo(49).colors).toBe(6);
+});
+
+it("has substantially more backtracking than the previous curve", () => {
+  const samples = Array.from({ length: 60 }, (_, i) => i + 1).concat(
+    Array.from({ length: 60 }, (_, i) => 201 + i * 11),
+  );
+  let states = 0,
+    moves = 0;
+  for (const n of samples) {
+    const p = level(n);
+    states += p.searchEffort;
+    moves += p.solution.length;
+  }
+  expect(states / samples.length).toBeGreaterThan(60);
+  expect(states / moves).toBeGreaterThan(2.5);
+}, 30000);
+
+it("switches a legacy player to the new curve on the next level without losing coins or looks", () => {
+  let old = legacySave();
+  old.coins = 1000;
+  old = buyBottle(buyBottle(old, "small"), "large");
+  old = buyLook(old, "gold");
+  const next = nextLevel(old);
+  expect(next.level).toBe(old.level + 1);
+  expect(next.generation).toBe(3);
+  expect(next.coins).toBe(old.coins);
+  expect(next.owned).toEqual(old.owned);
+  expect(next.equipment).toEqual(old.equipment);
+  expect(next.board.length).toBe(next.baseBottleCount);
+  expect(next.capacities.every((c) => c === 4)).toBe(true);
+  expect(followsSolution(next.board, next.solution, next.capacities)).toBe(
+    true,
+  );
 });
 
 it("keeps an in-progress version 2 board and restart layout after retuning", () => {
@@ -69,7 +101,15 @@ it("keeps an in-progress version 2 board and restart layout after retuning", () 
   g.solution = null;
   g.coins = 120;
   g.history = [];
-  vi.stubGlobal("localStorage", { getItem: () => JSON.stringify(g) });
+  vi.stubGlobal("localStorage", {
+    getItem: () =>
+      JSON.stringify({
+        ...g,
+        version: 2,
+        baseBottleCount: undefined,
+        generation: undefined,
+      }),
+  });
   const loaded = restore();
   expect(loaded.board).toEqual(g.board);
   expect(loaded.initial).toEqual(g.initial);
@@ -125,7 +165,7 @@ describe("purchases and saved progress", () => {
     expect(restore().owned).toEqual(g.owned);
   });
   it("preserves legacy level, wallet, board and history with a restart witness", () => {
-    const board = level(1000).board;
+    const board = legacyLevel(1000).board;
     const legacy = {
       level: 1000,
       board,
@@ -182,7 +222,7 @@ describe("verified hints", () => {
       [4, 4],
       [5, 5],
     ];
-    const g = createGame(205);
+    const g = legacySave(205);
     g.history = [g.board];
     g.board = dead;
     g.solution = null;
@@ -202,7 +242,7 @@ describe("verified hints", () => {
 });
 
 it("explicitly marks a fallback reset even without retained history", () => {
-  const g = createGame(205);
+  const g = legacySave(205);
   g.board = [
     [2, 3, 0, 0],
     [2, 3, 1, 1],

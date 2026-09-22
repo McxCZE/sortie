@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { buyBottle, createGame, LOOKS } from "../src/game";
+import { legacySave } from "../src/fixtures/legacy-save";
 
 test("buys both helpers, preserves them and outfits through restart and reload", async ({
   page,
@@ -29,7 +30,7 @@ test("buys both helpers, preserves them and outfits through restart and reload",
       .getByRole("button", { name: "Koupit" })
       .click();
   await page.getByRole("button", { name: "Zavřít" }).click();
-  await expect(page.locator(".bottle")).toHaveCount(10);
+  await expect(page.locator(".bottle")).toHaveCount(save.baseBottleCount + 2);
   await expect(page.locator(".app")).toHaveAttribute(
     "data-background",
     "aurora",
@@ -42,21 +43,21 @@ test("buys both helpers, preserves them and outfits through restart and reload",
     .locator(".bottle")
     .nth(save.board.findIndex((b) => b.length > 0))
     .click();
-  await page.locator(".bottle").nth(8).click();
+  await page.locator(".bottle").nth(save.baseBottleCount).click();
   await expect(page.locator(".moves strong")).toHaveText("1");
   await page.getByRole("button", { name: "Zpět" }).click();
   await page.getByRole("button", { name: "Znovu" }).click();
   await page
     .getByRole("button", { name: "Začít úroveň znovu", exact: true })
     .click();
-  await expect(page.locator(".bottle")).toHaveCount(10);
+  await expect(page.locator(".bottle")).toHaveCount(save.baseBottleCount + 2);
   await page.reload();
   await expect(page.locator(".board-stage")).toHaveAttribute(
     "data-ready",
     "true",
     { timeout: 30000 },
   );
-  await expect(page.locator(".bottle")).toHaveCount(10);
+  await expect(page.locator(".bottle")).toHaveCount(save.baseBottleCount + 2);
   await expect(page.locator(".coin-balance")).toHaveAttribute(
     "aria-label",
     "Mince: 765",
@@ -72,7 +73,9 @@ test("buys both helpers, preserves them and outfits through restart and reload",
     expect(r.right).toBeLessThanOrEqual(page.viewportSize()!.width);
     expect(r.bottom).toBeLessThan(page.viewportSize()!.height - 65);
   }
-  expect(new Set(b.map((r) => `${r.x},${r.y}`)).size).toBe(10);
+  expect(new Set(b.map((r) => `${r.x},${r.y}`)).size).toBe(
+    save.baseBottleCount + 2,
+  );
   await page.screenshot({
     path: `artifacts/shop-board-${test.info().project.name}.png`,
   });
@@ -136,7 +139,7 @@ test("hint charges only on acceptance and highlights a real move", async ({
 test("dead-end recovery explains the rewind before spending coins", async ({
   page,
 }) => {
-  const save = createGame(205);
+  const save = legacySave(205);
   save.coins = 40;
   save.history = [save.board];
   save.board = [
@@ -177,11 +180,9 @@ test("dead-end recovery explains the rewind before spending coins", async ({
 test("small bottle accepts only one unit and remains a helper", async ({
   page,
 }) => {
-  const save = buyBottle({ ...createGame(), coins: 100 }, "small");
-  save.board = [[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [], [], []];
-  save.solution = null;
-  // Move one colour out first so the puzzle is in progress.
+  const save = buyBottle({ ...legacySave(1), coins: 100 }, "small");
   save.board = [[0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [0], [], []];
+  save.solution = null;
   await page.goto("/");
   await page.evaluate(
     (s) => localStorage.setItem("sortie-save-v1", JSON.stringify(s)),

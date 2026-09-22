@@ -57,7 +57,10 @@ export function solve(
       path.push(candidate.move);
       if (visit(candidate.board, depth + 1)) return true;
       path.pop();
-      if (visited >= budget) break;
+      if (visited >= budget) {
+        limited = true;
+        break;
+      }
     }
     return false;
   }
