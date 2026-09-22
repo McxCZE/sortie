@@ -60,9 +60,9 @@ Volitelná písma Google mají systémovou náhradu. Offline instalace a synchro
 
 ## Obtížnost a nekonečné úrovně
 
-Cyklus se opakuje po pěti úrovních: **Oddech → Běžná → Běžná → Těžká → Výzva**. Základní počet barev roste z 3 na 4 od úrovně 21, na 5 od 81 a na 6 od 201. Oddechová kola mají později o barvu méně. Počet barev se dál nezvyšuje, čísla úrovní pokračují i za 1000 a 10000.
+Cyklus se opakuje po pěti úrovních: **Oddech → Běžná → Běžná → Těžká → Výzva**. Základní počet barev roste z 3 na 4 od úrovně 16, na 5 od 46 a na 6 od 111. Těžká kola a výzvy mají o barvu více (nejvýše 6), takže první čtvrtá barva přijde už ve 4. úrovni. Oddechová kola mají později o barvu méně. Počet barev se dál nezvyšuje, čísla úrovní pokračují i za 1000 a 10000.
 
-Generátor pro každou úroveň vytvoří 12 deterministických kandidátů obrácenými legálními tahy, zkrátí opakované stavy a vybírá podle fragmentace, ukrytých barev a délky známého řešení. Jde o odhad obtížnosti, ne záruku optimálního počtu tahů. Každý kandidát má ověřitelnou cestu k řešení bez nákupů.
+Generátor míří na 1,35násobek předchozího skóre složitosti. Vybírá mezi rozloženími vytvořenými obrácenými tahy a více promíchanými plnými lahvičkami, jejichž řešení předem ověří omezeným hledáním. Když hledání nepomůže, má vždy k dispozici konstruktivně řešitelnou variantu. Skóre dál používá stejnou fragmentaci, ukryté barvy a délku známého řešení; samotné číslo skóre se nenásobí. Kontrola prvních 1 000 úrovní vůči revizi `0cc8659` naměřila +33,93 %, prvních dvaceti +35,26 %. Jde o odhad obtížnosti, ne záruku stejného nárůstu subjektivní náročnosti nebo optimálního počtu tahů. Rozehrané uložené kolo včetně jeho počátečního rozložení se zachová; nová křivka platí pro další úrovně.
 
 ## Odměny a obchod
 
@@ -77,4 +77,4 @@ Trvalé vzhledy lze kombinovat a přepínat bez dalšího placení: **ametystov�
 
 Ukládání dál používá `sortie-save-v1`, formát dat je verze 2. Migrace zachovává starý stav, peněženku a historii; starý generátor je zmrazený pro obnovu původního rozložení. Nové hry navíc ukládají počáteční rozložení, kapacity, známá řešení, zakoupené vzhledy a vybavení. Již dokončené úrovně se zpětně neodměňují.
 
-`src/hints.ts` obsahuje řešič a nabídku ověřeného návratu; `src/Shop.tsx` obchod. Testy v `src/economy.test.ts` a `tests/shop.spec.ts` pokrývají migraci, pomocné lahvičky, odměny, nápovědy, vzhledy a přetrvání nákupů.
+`src/rules.ts` obsahuje společná pravidla, `src/solver.ts` řešič a `src/hints.ts` nabídku ověřeného návratu; `src/Shop.tsx` obchod. Testy v `src/economy.test.ts` a `tests/shop.spec.ts` pokrývají migraci, pomocné lahvičky, odměny, nápovědy, vzhledy a přetrvání nákupů.

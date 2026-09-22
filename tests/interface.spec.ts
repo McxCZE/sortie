@@ -65,6 +65,13 @@ test("reference-style interface stays usable across phone orientations", async (
       expect(r.y).toBeGreaterThanOrEqual(0);
       expect(r.bottom).toBeLessThanOrEqual(height);
     }
+    for (const label of await page.locator(".action-name:visible").all()) {
+      const box = await label.boundingBox();
+      expect(box!.y).toBeGreaterThanOrEqual(geometry.controls.y);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(
+        geometry.controls.bottom,
+      );
+    }
     for (const b of geometry.bottles) {
       const c = geometry.controls;
       expect(

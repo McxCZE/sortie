@@ -258,7 +258,7 @@ body,
   left: 0;
   right: 0;
   top: calc(clamp(200px, 24dvh, 230px) + env(safe-area-inset-top, 0px));
-  bottom: calc(clamp(146px, 19dvh, 184px) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(clamp(166px, 21.5dvh, 204px) + env(safe-area-inset-bottom, 0px));
 }
 .controls {
   position: absolute;
@@ -269,7 +269,7 @@ body,
   display: flex;
   gap: 17px;
   align-items: center;
-  padding: 14px 16px 18px;
+  padding: 14px 16px 38px;
   border: 3px solid #4b4dda;
   border-radius: 34px;
   background: linear-gradient(120deg, #383bc9, #151575 60%, #191986);
@@ -334,7 +334,8 @@ body,
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -34px;
+  bottom: -31px;
+  line-height: 13px;
   text-align: center;
   font-size: 10px;
   letter-spacing: 0.3px;
@@ -737,11 +738,11 @@ body,
   }
   .playfield {
     top: 245px;
-    bottom: 170px;
+    bottom: 190px;
   }
   .controls {
     gap: 25px;
-    padding: 17px 23px 21px;
+    padding: 17px 23px 41px;
     bottom: 46px;
   }
   .action-button {
@@ -765,11 +766,11 @@ body,
   }
   .playfield {
     top: 200px;
-    bottom: 120px;
+    bottom: 140px;
   }
   .controls {
     bottom: 30px;
-    padding: 11px 14px 15px;
+    padding: 11px 14px 35px;
     gap: 16px;
   }
   .action-button {

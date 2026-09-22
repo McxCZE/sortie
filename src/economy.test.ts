@@ -17,6 +17,7 @@ import {
   won,
 } from "./game";
 import { findHint, solve } from "./hints";
+import { difficultyBaseline } from "./fixtures/difficulty-v1";
 afterEach(() => vi.unstubAllGlobals());
 
 describe("endless difficulty cycle", () => {
@@ -42,6 +43,40 @@ describe("endless difficulty cycle", () => {
     expect(hard).toBeGreaterThan(easy * 1.15);
   });
 });
+it("raises measured complexity about 35% across 1000 certified levels", () => {
+  for (const range of difficultyBaseline) {
+    let score = 0;
+    for (let n = range.from; n <= range.to; n++) {
+      const puzzle = level(n);
+      score += puzzle.score;
+      expect(followsSolution(puzzle.board, puzzle.solution)).toBe(true);
+      expect(won(puzzle.board)).toBe(false);
+    }
+    expect(score / range.scoreSum).toBeGreaterThan(1.3);
+    expect(score / range.scoreSum).toBeLessThan(1.4);
+  }
+  expect(levelInfo(4).colors).toBe(4);
+  expect(levelInfo(17).colors).toBe(4);
+  expect(levelInfo(49).colors).toBe(6);
+});
+
+it("keeps an in-progress version 2 board and restart layout after retuning", () => {
+  const g = createGame(22);
+  g.initial = [[0, 1, 0, 1], [1, 0, 1, 0], [2, 2, 2, 2], [], []];
+  g.board = structuredClone(g.initial);
+  g.capacities = [4, 4, 4, 4, 4];
+  g.initialSolution = null;
+  g.solution = null;
+  g.coins = 120;
+  g.history = [];
+  vi.stubGlobal("localStorage", { getItem: () => JSON.stringify(g) });
+  const loaded = restore();
+  expect(loaded.board).toEqual(g.board);
+  expect(loaded.initial).toEqual(g.initial);
+  expect(loaded.coins).toBe(120);
+  expect(restartLevel(loaded).board).toEqual(g.initial);
+});
+
 describe("purchases and saved progress", () => {
   it("keeps paid bottles through undo, restart and reload, clears them next level", () => {
     let g = createGame();
