@@ -6,7 +6,6 @@ import {
   useState,
 } from "react";
 import {
-  complete,
   pour,
   restore,
   won,
@@ -19,6 +18,7 @@ import {
 import type { Save, Move } from "./game";
 import type { HintResult } from "./hints";
 import Shop from "./Shop";
+import { GameIcon, CoinIcon } from "./ui/GameIcon";
 import Dialog from "./Dialog";
 import "./App.css";
 import Board3D from "./graphics/Board3D";
@@ -31,6 +31,7 @@ export default function App() {
   const [message, setMessage] = useState("Trocha soustředění. Trocha kouzel.");
   const [restart, setRestart] = useState(false);
   const [shop, setShop] = useState(false);
+  const [settings, setSettings] = useState(false);
   const [hintDialog, setHintDialog] = useState(false);
   const [hintResult, setHintResult] = useState<HintResult | null>(null);
   const hintMove = game.hint;
@@ -49,7 +50,6 @@ export default function App() {
   const audio = useRef<AudioContext | null>(null);
   const busy = useRef(false);
   const finished = won(game.board, game.capacities);
-  const sorted = game.board.filter(complete).length;
   useLayoutEffect(() => {
     try {
       localStorage.setItem("sortie-save-v1", JSON.stringify(game));
@@ -223,63 +223,85 @@ export default function App() {
   return (
     <main className="app" data-background={game.equipment.background}>
       <section className="game-panel" aria-label="Hra na třídění barev">
-        <div className="game-top">
-          <div className="level-info">
-            <h1>Úroveň {String(game.level).padStart(2, "0")}</h1>
-            <span className={`difficulty-tag ${game.difficulty}`}>
-              {DIFFICULTIES[game.difficulty].name} · {game.reward} ◈
+        <div className="sky-stars" aria-hidden="true">
+          {Array.from({ length: 14 }, (_, i) => (
+            <span
+              key={i}
+              style={{
+                left: `${(i * 37 + 17) % 96}%`,
+                top: `${(i * 23 + 5) % 96}%`,
+                animationDelay: `${i * 0.47}s`,
+              }}
+            >
+              ✦
+            </span>
+          ))}
+        </div>
+        <header className="game-top">
+          <button
+            className="coin-balance"
+            aria-label={`Mince: ${game.coins}`}
+            title="Otevřít obchod"
+            disabled={!!animation}
+            onClick={() => setShop(true)}
+          >
+            <CoinIcon />
+            <strong>
+              {new Intl.NumberFormat("cs-CZ", {
+                notation: game.coins >= 10000 ? "compact" : "standard",
+                maximumFractionDigits: 1,
+              }).format(game.coins)}
+            </strong>
+          </button>
+          <button
+            className="icon-button settings-button"
+            aria-label="Nastavení"
+            onClick={() => setSettings(true)}
+          >
+            <GameIcon name="settings" />
+          </button>
+        </header>
+        <div className={`level-plaque ${game.difficulty}`}>
+          <div className="level-emblems" aria-hidden="true">
+            {game.difficulty === "challenge" ? (
+              <>
+                <GameIcon name="skull" />
+                <GameIcon name="skull" />
+                <GameIcon name="skull" />
+              </>
+            ) : game.difficulty === "hard" ? (
+              <GameIcon name="skull" />
+            ) : (
+              <span>✦</span>
+            )}
+          </div>
+          <h1>Úroveň {String(game.level).padStart(2, "0")}</h1>
+          <span className="difficulty-ribbon">
+            {DIFFICULTIES[game.difficulty].name}
+          </span>
+          <div className="level-meta">
+            <span className="moves">
+              <strong>{game.history.length}</strong> <span>tahů</span>
+            </span>
+            <span className="reward-preview">
+              +{game.reward} <CoinIcon />
             </span>
           </div>
-          <div className="game-hud-right">
-            <div
-              className="coin-balance"
-              aria-label={`Mince: ${game.coins}`}
-              title="Mince"
-            >
-              <span className="coin-symbol" aria-hidden="true">
-                ◈
-              </span>
-              <strong>
-                {new Intl.NumberFormat("cs-CZ", {
-                  notation: game.coins >= 10000 ? "compact" : "standard",
-                  maximumFractionDigits: 1,
-                }).format(game.coins)}
-              </strong>
-            </div>
-            <div className="moves">
-              <strong>{game.history.length}</strong>
-              <span>TAHY</span>
-            </div>
-            <button
-              className="icon-button"
-              onClick={() => setGame((g) => ({ ...g, sound: !g.sound }))}
-              aria-label={game.sound ? "Vypnout zvuk" : "Zapnout zvuk"}
-              aria-pressed={game.sound}
-            >
-              {game.sound ? "♫" : "♪"}
-              <span className={!game.sound ? "mute-mark" : ""} />
-            </button>
-          </div>
         </div>
-        <div className="progress-line">
-          <span
-            style={{
-              width: `${(sorted / new Set(game.board.flat()).size) * 100}%`,
-            }}
+        <div className="playfield">
+          <Board3D
+            board={game.board}
+            capacities={game.capacities}
+            equipment={game.equipment}
+            hint={hintMove}
+            selected={selected}
+            invalid={invalid}
+            animation={animation}
+            finished={finished}
+            onPick={tap}
+            onComplete={finish}
           />
         </div>
-        <Board3D
-          board={game.board}
-          capacities={game.capacities}
-          equipment={game.equipment}
-          hint={hintMove}
-          selected={selected}
-          invalid={invalid}
-          animation={animation}
-          finished={finished}
-          onPick={tap}
-          onComplete={finish}
-        />
         <div
           className={`status ${invalid !== null || hintMove ? "status-error" : ""}`}
           role="status"
@@ -291,6 +313,9 @@ export default function App() {
         </div>
         <div className="controls">
           <button
+            className="action-button"
+            aria-label="Zpět"
+            title="Vrátit tah zdarma"
             disabled={!game.history.length || !!animation}
             onClick={() => {
               setGame((g) => ({
@@ -304,28 +329,46 @@ export default function App() {
               setMessage("Krok zpět, nová možnost.");
             }}
           >
-            <span>↶</span> Zpět
+            <GameIcon name="undo" />
+            <span className="action-name">Zpět</span>
+            <span className="action-count">{game.history.length}</span>
           </button>
-          <div className="control-divider" />
-          <button disabled={!!animation} onClick={() => setRestart(true)}>
-            <span>↻</span> Znovu
+          <button
+            className="action-button"
+            aria-label="Znovu"
+            title="Restartovat úroveň"
+            disabled={!!animation}
+            onClick={() => setRestart(true)}
+          >
+            <GameIcon name="restart" />
+            <span className="action-name">Znovu</span>
           </button>
-          <div className="control-divider" />
-          <button disabled={!!animation} onClick={() => setShop(true)}>
-            <span>◈</span> Obchod
+          <button
+            className="action-button"
+            aria-label="Obchod"
+            title="Pomůcky a vzhledy"
+            disabled={!!animation}
+            onClick={() => setShop(true)}
+          >
+            <GameIcon name="bottle" />
+            <span className="action-name">Obchod</span>
+            <span className="action-price">
+              <CoinIcon />+
+            </span>
           </button>
         </div>
         {finished && (
           <div className="win">
-            <span>✦ KRÁSNĚ ROZTŘÍDĚNO ✦</span>
+            <div className="victory-medal">
+              <GameIcon name="check" />
+            </div>
+            <span className="victory-kicker">KRÁSNĚ ROZTŘÍDĚNO</span>
             <h3>Kouzlo se povedlo.</h3>
             <p>
               Úroveň {game.level} dokončena. Počet tahů: {game.history.length}.
             </p>
             <div className="win-reward">
-              <span className="coin-symbol" aria-hidden="true">
-                ◈
-              </span>
+              <CoinIcon />
               <strong>Odměna za úroveň: {game.reward} mincí</strong>
             </div>
             <button
@@ -341,6 +384,28 @@ export default function App() {
           </div>
         )}
       </section>
+      {settings && (
+        <Dialog title="Nastavení" onClose={() => setSettings(false)}>
+          <div className="setting-row">
+            <span>Zvuk hry</span>
+            <button
+              className="sound-toggle"
+              aria-label={game.sound ? "Vypnout zvuk" : "Zapnout zvuk"}
+              aria-pressed={game.sound}
+              onClick={() => setGame((g) => ({ ...g, sound: !g.sound }))}
+            >
+              <GameIcon name={game.sound ? "sound" : "mute"} />
+              <span>{game.sound ? "Zapnuto" : "Vypnuto"}</span>
+            </button>
+          </div>
+          <p className="settings-note">
+            Tvůj postup a mince se ukládají automaticky.
+          </p>
+          <button className="primary" onClick={() => setSettings(false)}>
+            Zpět do hry
+          </button>
+        </Dialog>
+      )}
       {shop && (
         <Shop
           game={game}
@@ -389,51 +454,18 @@ export default function App() {
         </Dialog>
       )}
       {restart && (
-        <div
-          className="modal-backdrop"
-          onClick={() => {
-            setRestart(false);
-          }}
-        >
-          <section
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Začít úroveň znovu"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                setRestart(false);
-              }
-              if (e.key === "Tab") {
-                const buttons =
-                  e.currentTarget.querySelectorAll<HTMLButtonElement>("button");
-                const first = buttons[0],
-                  last = buttons[buttons.length - 1];
-                if (e.shiftKey && document.activeElement === first) {
-                  e.preventDefault();
-                  last.focus();
-                }
-                if (!e.shiftKey && document.activeElement === last) {
-                  e.preventDefault();
-                  first.focus();
-                }
-              }
-            }}
-          >
-            <span className="modal-star">✧</span>
-            <h2>Znovu od začátku?</h2>
-            <p>
-              Tahle úroveň se vrátí do výchozího stavu a počet tahů se vynuluje.
-            </p>
-            <button autoFocus className="primary" onClick={reset}>
-              Začít úroveň znovu
-            </button>
-            <button className="text-button" onClick={() => setRestart(false)}>
-              Pokračovat ve hře
-            </button>
-          </section>
-        </div>
+        <Dialog title="Znovu od začátku?" onClose={() => setRestart(false)}>
+          <p>
+            Tahle úroveň se vrátí do výchozího stavu a počet tahů se vynuluje.
+            Koupené lahvičky ti zůstanou.
+          </p>
+          <button className="primary" onClick={reset}>
+            Začít úroveň znovu
+          </button>
+          <button className="text-button" onClick={() => setRestart(false)}>
+            Pokračovat ve hře
+          </button>
+        </Dialog>
       )}
     </main>
   );

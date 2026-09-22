@@ -54,18 +54,30 @@ test("coins survive reload, undo and advancing to the next level", async ({
   );
   await page.setViewportSize({ width: 320, height: 700 });
   const boxes = await page
-    .locator(".game-top h1, .coin-balance, .moves, .icon-button")
+    .locator(".coin-balance, .settings-button, .level-plaque, .controls")
     .evaluateAll((nodes) =>
       nodes.map((n) => {
         const b = n.getBoundingClientRect();
-        return { left: b.left, right: b.right };
+        return { left: b.left, right: b.right, top: b.top, bottom: b.bottom };
       }),
     );
-  for (let i = 0; i < boxes.length; i++) {
-    expect(boxes[i].left).toBeGreaterThanOrEqual(0);
-    expect(boxes[i].right).toBeLessThanOrEqual(320);
-    if (i) expect(boxes[i].left).toBeGreaterThanOrEqual(boxes[i - 1].right);
+  for (const b of boxes) {
+    expect(b.left).toBeGreaterThanOrEqual(0);
+    expect(b.right).toBeLessThanOrEqual(320);
+    expect(b.top).toBeGreaterThanOrEqual(0);
+    expect(b.bottom).toBeLessThanOrEqual(700);
   }
+  for (let i = 0; i < boxes.length; i++)
+    for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i],
+        b = boxes[j];
+      expect(
+        a.right <= b.left ||
+          b.right <= a.left ||
+          a.bottom <= b.top ||
+          b.bottom <= a.top,
+      ).toBe(true);
+    }
   await page.screenshot({
     path: `artifacts/coins-${test.info().project.name}.png`,
   });

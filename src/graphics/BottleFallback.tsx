@@ -114,7 +114,7 @@ export default function BottleFallback({
       <path
         d="M34 12 H66 V43 Q66 50 77 59 Q84 65 84 79 V151 Q84 165 70 165 H30 Q16 165 16 151 V79 Q16 65 23 59 Q34 50 34 43Z"
         fill={`url(#shine-${id})`}
-        stroke="#c6c1ed"
+        stroke="#63b7ef"
         strokeOpacity=".4"
         strokeWidth="2"
       />
@@ -132,8 +132,8 @@ export default function BottleFallback({
         width="40"
         height="8"
         rx="3"
-        fill="#77718e"
-        stroke="#c6c1ed"
+        fill="#174978"
+        stroke="#63b7ef"
         strokeOpacity=".6"
       />
       {complete(contents) && (

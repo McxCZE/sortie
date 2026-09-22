@@ -10,6 +10,7 @@ import type { ReactNode, RefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   BufferGeometry,
+  Color,
   DoubleSide,
   Float32BufferAttribute,
   Group,
@@ -53,8 +54,7 @@ type Props = {
   onPick: (index: number) => void;
   onComplete: (id: number) => void;
 };
-const WORLD_HEIGHT = 9.7,
-  CAMERA_COS = 30 / Math.hypot(3, 30);
+const CAMERA_COS = 30 / Math.hypot(5, 30);
 const LIQUID_COLORS = [
   "#7026ec",
   "#ff780f",
@@ -66,21 +66,28 @@ const LIQUID_COLORS = [
 const SYMBOLS = ["✦", "●", "◆", "♥", "☾", "✳"];
 function layout(count: number, wide: boolean) {
   const columns = wide ? count : count > 6 ? 4 : 3;
-  const rows = Math.ceil(count / columns);
+  const rows = Math.ceil(count / columns),
+    stepY = HEIGHT + 0.65;
   return {
-    width: columns * 2.1 + 0.6,
-    height: wide ? 6.2 : WORLD_HEIGHT + Math.max(0, rows - 2) * 4.2,
+    width: columns * 1.65 + 0.1,
+    height: rows * stepY + 1.6,
     positions: Array.from({ length: count }, (_, i) => {
       const row = Math.floor(i / columns),
         inRow = Math.min(columns, count - row * columns);
       return new Vector3(
-        ((i % columns) - (inRow - 1) / 2) * 2.1,
-        wide ? -1.5 : (rows - 1) * 2.1 - 1.75 - row * 4.2,
+        ((i % columns) - (inRow - 1) / 2) * 1.65,
+        ((rows - 1) * stepY) / 2 - HEIGHT / 2 - 0.4 - row * stepY,
         0,
       );
     }),
   };
 }
+const GLASS_RIM_VERTEX = `varying vec3 vNormal; varying vec3 vView;
+void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);vNormal=normalize(normalMatrix*normal);vView=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`;
+const GLASS_RIM_FRAGMENT = `uniform vec3 rimColor;varying vec3 vNormal;varying vec3 vView;
+void main(){float rim=pow(1.0-abs(dot(normalize(vNormal),normalize(vView))),2.4);gl_FragColor=vec4(rimColor,rim*.78);
+#include <colorspace_fragment>
+}`;
 class Boundary extends Component<
   { children: ReactNode; onFailure: () => void },
   { failed: boolean }
@@ -113,6 +120,16 @@ function BottleModel({
   capacity: number;
   equipment: Equipment;
 }) {
+  const rimUniforms = useMemo(
+    () => ({
+      rimColor: {
+        value: new Color(
+          equipment.glass === "amethyst" ? "#b36bfa" : "#409de8",
+        ),
+      },
+    }),
+    [equipment.glass],
+  );
   const profile = useMemo(
     () => PROFILE.map(([r, y]) => new Vector2(r + 0.035, y)),
     [],
@@ -135,9 +152,9 @@ function BottleModel({
       <mesh renderOrder={3}>
         <latheGeometry args={[profile, 40]} />
         <meshPhysicalMaterial
-          color={equipment.glass === "amethyst" ? "#c291ed" : "#ffffff"}
+          color={equipment.glass === "amethyst" ? "#c291ed" : "#70b7ef"}
           transparent
-          opacity={equipment.glass === "amethyst" ? 0.23 : 0.14}
+          opacity={equipment.glass === "amethyst" ? 0.16 : 0.085}
           transmission={0.98}
           thickness={0.025}
           ior={1.2}
@@ -149,6 +166,20 @@ function BottleModel({
           depthWrite={false}
         />
       </mesh>
+      <mesh renderOrder={5}>
+        <latheGeometry args={[profile, 40]} />
+        <shaderMaterial
+          uniforms={rimUniforms}
+          vertexShader={GLASS_RIM_VERTEX}
+          fragmentShader={GLASS_RIM_FRAGMENT}
+          transparent
+          depthWrite={false}
+        />
+      </mesh>
+      <mesh position={[0, HEIGHT - 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.19, 32]} />
+        <meshBasicMaterial color="#041125" side={DoubleSide} />
+      </mesh>
       <mesh
         position={[0, HEIGHT, 0]}
         rotation={[Math.PI / 2, 0, 0]}
@@ -156,13 +187,40 @@ function BottleModel({
       >
         <torusGeometry args={[0.255, 0.043, 10, 32]} />
         <meshPhysicalMaterial
-          color={equipment.glass === "amethyst" ? "#b46bea" : "#eee9ff"}
+          color={equipment.glass === "amethyst" ? "#b46bea" : "#69b9ec"}
           transparent
-          opacity={0.6}
-          transmission={0.7}
+          opacity={0.8}
+          transmission={0.4}
           thickness={0.035}
           roughness={0.08}
           envMapIntensity={0.4}
+        />
+      </mesh>
+      <mesh
+        position={[-0.38, 1.43, 0.39]}
+        scale={[0.028, 1.02, 0.008]}
+        renderOrder={6}
+      >
+        <sphereGeometry args={[1, 8, 12]} />
+        <meshBasicMaterial
+          color="#b8ddff"
+          transparent
+          opacity={0.13}
+          depthWrite={false}
+        />
+      </mesh>
+      <mesh
+        position={[0.24, 2.66, 0.36]}
+        scale={[0.095, 0.17, 0.008]}
+        rotation={[0, 0, -0.22]}
+        renderOrder={6}
+      >
+        <sphereGeometry args={[1, 10, 10]} />
+        <meshBasicMaterial
+          color="#c4ddff"
+          transparent
+          opacity={0.13}
+          depthWrite={false}
         />
       </mesh>
       <mesh position={[0, 0.1, 0]}>
@@ -175,28 +233,18 @@ function BottleModel({
           depthWrite={false}
         />
       </mesh>
-      {Array.from({ length: capacity }, (_, i) => i + 1).map((n) => (
-        <group
-          key={n}
-          position={[0, fillHeight((n * UNIT * 4) / capacity, 0), 0]}
-        >
-          <mesh rotation={[Math.PI / 2, 0, 0]} renderOrder={5}>
-            <torusGeometry
-              args={[n === capacity ? 0.53 : 0.552, 0.009, 6, 40]}
-            />
-            <meshBasicMaterial
-              color="#e9dffb"
-              transparent
-              opacity={0.4}
-              depthWrite={false}
-            />
-          </mesh>
-          <mesh position={[0.27, 0, 0.49]} renderOrder={6}>
-            <boxGeometry args={[0.13, 0.02, 0.008]} />
-            <meshBasicMaterial color="#fff2d7" />
-          </mesh>
-        </group>
-      ))}
+      <mesh
+        position={[0, 0.15, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
+        renderOrder={5}
+      >
+        <torusGeometry args={[0.472, 0.014, 6, 40]} />
+        <meshBasicMaterial
+          color={equipment.glass === "amethyst" ? "#9770ef" : "#489ada"}
+          transparent
+          opacity={0.75}
+        />
+      </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}>
         <ringGeometry args={[0.6, 0.63, 32]} />
         <meshBasicMaterial
@@ -269,11 +317,7 @@ function Scene({
   useEffect(() => {
     // Camera and renderer are external Three.js objects, updated on resize.
     Object.assign(camera, {
-      zoom: Math.min(
-        (size.width - 24) / worldWidth,
-        Math.max(100, size.height - (size.height < 500 ? 110 : 160)) /
-          worldHeight,
-      ),
+      zoom: Math.min((size.width - 16) / worldWidth, size.height / worldHeight),
     });
     camera.updateProjectionMatrix();
     invalidate();
@@ -567,9 +611,8 @@ export default function Board3D(props: Props) {
     if (failed && animation) onComplete(animation.id);
   }, [failed, animation, onComplete]);
   const zoom = Math.min(
-    (size.width - 24) / arrangement.width,
-    Math.max(100, size.height - (size.height < 500 ? 110 : 160)) /
-      arrangement.height,
+    (size.width - 16) / arrangement.width,
+    size.height / arrangement.height,
   );
   let hintPath = "",
     hintStart = { x: 0, y: 0 };
@@ -616,7 +659,7 @@ export default function Board3D(props: Props) {
             orthographic
             frameloop="demand"
             dpr={[1, 1.25]}
-            camera={{ position: [0, 3, 30], zoom: 42 }}
+            camera={{ position: [0, 5, 30], zoom: 42 }}
             gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}
             fallback={<span>Načítám lahvičky…</span>}
             onCreated={({ camera, gl }) => {

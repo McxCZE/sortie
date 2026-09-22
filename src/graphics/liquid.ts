@@ -6,16 +6,16 @@ import {
   Vector3,
 } from "three";
 
-export const HEIGHT = 2.65;
+export const HEIGHT = 3.2;
 export const PROFILE: [number, number][] = [
   [0, 0.08],
   [0.4, 0.08],
   [0.49, 0.14],
   [0.51, 0.25],
-  [0.51, 1.78],
-  [0.48, 1.9],
-  [0.34, 2.1],
-  [0.22, 2.22],
+  [0.51, 2.46],
+  [0.48, 2.59],
+  [0.32, 2.79],
+  [0.22, 2.91],
   [0.22, HEIGHT],
 ];
 const samples: { x: number; y: number; weight: number }[] = [];
@@ -167,4 +167,4 @@ export const smooth = (x: number) => {
   const t = Math.max(0, Math.min(1, x));
   return t * t * (3 - 2 * t);
 };
-export const UNIT_VOLUME = 0.21;
+export const UNIT_VOLUME = 0.215;

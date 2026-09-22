@@ -50,7 +50,8 @@
   left: 0;
   right: 0;
   font-size: 9px;
-  color: #b4a6c7;
+  opacity: 0.55;
+  color: #8aa0ce;
   letter-spacing: 1px;
   display: flex;
   flex-direction: column;
@@ -157,4 +158,26 @@
     animation: none;
     display: none;
   }
+}
+
+.bottle-caption {
+  font-weight: 800;
+  text-shadow: 0 1px 3px #010323;
+}
+.colour-key {
+  display: none;
+}
+.bottle-hit.selected .bottle-caption,
+.hint-source .bottle-caption,
+.hint-target .bottle-caption {
+  opacity: 1;
+}
+.bottle-hit:focus-visible .colour-key,
+.hint-source .colour-key,
+.hint-target .colour-key {
+  display: flex;
+}
+.board-loading {
+  color: #bfa4ff;
+  font-weight: 900;
 }

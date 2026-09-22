@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { GameIcon } from "./ui/GameIcon";
 import type { ReactNode } from "react";
 export default function Dialog({
   title,
@@ -53,7 +54,7 @@ export default function Dialog({
             onClick={onClose}
             aria-label="Zavřít"
           >
-            ×
+            <GameIcon name="close" />
           </button>
         </div>
         {children}

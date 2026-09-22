@@ -2,6 +2,7 @@ import { useState } from "react";
 import { buyBottle, buyLook, LOOKS, PRICES, won } from "./game";
 import type { Save } from "./game";
 import Dialog from "./Dialog";
+import { CoinIcon, GameIcon } from "./ui/GameIcon";
 export default function Shop({
   game,
   onChange,
@@ -19,9 +20,7 @@ export default function Shop({
   return (
     <Dialog title="Obchod" wide onClose={onClose}>
       <div className="shop-wallet">
-        <span className="coin-symbol" aria-hidden="true">
-          ◈
-        </span>{" "}
+        <CoinIcon />
         {game.coins.toLocaleString("cs-CZ")} mincí
       </div>
       <div className="shop-tabs">
@@ -38,6 +37,9 @@ export default function Shop({
             Každá úroveň jde vyřešit bez nákupu. Zpět a restart jsou zdarma.
           </p>
           <div className="shop-card">
+            <div className="shop-item-icon">
+              <GameIcon name="hint" />
+            </div>
             <div>
               <h3>Nápověda</h3>
               <p>
@@ -58,6 +60,11 @@ export default function Shop({
               owned = extras.includes(capacity);
             return (
               <div className="shop-card" key={kind}>
+                <div
+                  className={`shop-item-icon ${kind === "small" ? "mini-icon" : ""}`}
+                >
+                  <GameIcon name="bottle" />
+                </div>
                 <div>
                   <h3>
                     {kind === "small" ? "Malá lahvička" : "Prázdná lahvička"}

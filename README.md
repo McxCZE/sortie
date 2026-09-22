@@ -39,6 +39,12 @@ npx playwright install chromium
 npm run test:e2e -- --workers=2
 ```
 
+## Ovládání a vzhled
+
+Rozhraní používá tmavě modrou herní plochu, výrazný štítek úrovně, zlaté mince a fialová plastická tlačítka. Mince vlevo otevírají obchod, ozubené kolo vpravo nastavení zvuku. Spodní panel obsahuje Zpět, Znovu a Obchod; číslo u Zpět odpovídá počtu tahů, které lze vrátit zdarma. Na telefonu otočeném na šířku se panel přesune doprava.
+
+Ikony v `src/ui/GameIcon.tsx` jsou vlastní SVG a herní prvky jsou vykreslované kódem. Nejsou potřeba obrázkové balíčky ani externí 3D modely. Sklo má modrý obrys a jemné odlesky. Pravidla, ceny a formát uložené hry se při změně vzhledu nemění.
+
 ## Struktura
 
 - `src/game.ts`: pravidla přelévání, generátor řešitelných úrovní, kontrola uloženého stavu.

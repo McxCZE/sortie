@@ -1,12 +1,12 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900;1000&display=swap");
 :root {
-  font-family: "DM Sans", sans-serif;
-  color: #f0ecfa;
-  background: #14131e;
+  font-family: "Nunito", "Trebuchet MS", sans-serif;
+  color: #fff6de;
+  background: #050929;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  font-weight: 400;
+  font-weight: 800;
 }
 * {
   box-sizing: border-box;
@@ -23,26 +23,17 @@ button {
   font: inherit;
   cursor: pointer;
   touch-action: manipulation;
+  color: inherit;
 }
 button:disabled {
   cursor: default;
 }
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid #c6b0ff;
+  outline: 3px solid #fff89c;
   outline-offset: 5px;
-}
-button {
-  color: inherit;
 }
 a {
   color: inherit;
   text-decoration: none;
-}
-body:before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(ellipse at 50% 28%, #76609b15, transparent 65%);
 }

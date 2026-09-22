@@ -120,7 +120,9 @@ test("restores the level, bottles, undo and sound after closing the page", async
     "true",
     { timeout: 30000 },
   );
+  await page.getByRole("button", { name: "Nastavení", exact: true }).click();
   await page.getByRole("button", { name: "Zapnout zvuk" }).click();
+  await page.getByRole("button", { name: "Zavřít" }).click();
   const move = level(1).solution[0];
   await page
     .getByRole("button", { name: `Lahvička ${move.from + 1}:` })
@@ -142,9 +144,13 @@ test("restores the level, bottles, undo and sound after closing the page", async
       .locator(".bottle")
       .evaluateAll((nodes) => nodes.map((n) => n.getAttribute("aria-label"))),
   ).toEqual(labels);
+  await reopened
+    .getByRole("button", { name: "Nastavení", exact: true })
+    .click();
   await expect(
     reopened.getByRole("button", { name: "Vypnout zvuk" }),
   ).toHaveAttribute("aria-pressed", "true");
+  await reopened.getByRole("button", { name: "Zavřít" }).click();
   await reopened.getByRole("button", { name: "Zpět" }).click();
   await expect(reopened.locator(".moves strong")).toHaveText("0");
 });
@@ -165,13 +171,29 @@ test("3D pours commit one legal move and lock controls while animating", async (
   const initial = level(1).board,
     move = level(1).solution[0],
     expected = pour(initial, move.from, move.to);
+  await page.evaluate(() => {
+    const board = document.querySelector(".board-stage")!;
+    const observer = new MutationObserver(() => {
+      if (board.getAttribute("data-animating") === "true") {
+        document.documentElement.dataset.animationLocked = String(
+          [
+            ...document.querySelectorAll<HTMLButtonElement>(".controls button"),
+          ].every((button) => button.disabled),
+        );
+        observer.disconnect();
+      }
+    });
+    observer.observe(board, {
+      attributes: true,
+      attributeFilter: ["data-animating"],
+    });
+  });
   await page.locator(".bottle").nth(move.from).click();
   await page.locator(".bottle").nth(move.to).click();
-  await expect(page.locator(".board-stage")).toHaveAttribute(
-    "data-animating",
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-animation-locked",
     "true",
   );
-  await expect(page.getByRole("button", { name: "Znovu" })).toBeDisabled();
   await expect(page.locator(".moves strong")).toHaveText("1", {
     timeout: 15000,
   });
