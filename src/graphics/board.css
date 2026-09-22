@@ -1,0 +1,160 @@
+.board-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.board-stage canvas {
+  touch-action: pan-y !important;
+}
+.board-stage > div:first-child {
+  touch-action: pan-y !important;
+}
+.bottle-targets {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.bottle.bottle-hit {
+  position: absolute;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  display: block;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  max-width: none;
+  min-width: 44px;
+  transition: none;
+  filter: none;
+  isolation: auto;
+}
+.bottle.bottle-hit.selected {
+  transform: translateX(-50%);
+  filter: none;
+}
+.bottle.bottle-hit.selected:after {
+  display: none;
+}
+.bottle.bottle-hit.pouring {
+  z-index: 1;
+}
+.bottle.bottle-hit:focus-visible {
+  outline: 2px solid #c7afff;
+  border-radius: 14px;
+  outline-offset: 0;
+}
+.bottle-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  font-size: 9px;
+  color: #b4a6c7;
+  letter-spacing: 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.complete .bottle-caption {
+  color: #9ee7b9;
+}
+.colour-key {
+  display: flex;
+  gap: 3px;
+  letter-spacing: 0;
+  min-height: 12px;
+  font-size: 9px;
+}
+.bottle-hit.selected .bottle-caption {
+  color: #e1ceff;
+}
+.board-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ad9bbd;
+  font-size: 12px;
+  pointer-events: none;
+}
+.board-stage[data-renderer="svg"] .bottle-hit svg {
+  height: calc(100% - 24px);
+  width: 100%;
+}
+.bottle.bottle-hit.invalid {
+  animation: invalid-bottle 0.25s;
+}
+@keyframes invalid-bottle {
+  25% {
+    transform: translateX(calc(-50% - 4px));
+  }
+  75% {
+    transform: translateX(calc(-50% + 4px));
+  }
+}
+@media (max-width: 600px) {
+  .bottle-caption {
+    font-size: 8px;
+  }
+  .colour-key {
+    font-size: 8px;
+    gap: 2px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bottle.bottle-hit.invalid {
+    animation: none;
+  }
+}
+.hint-source .bottle-caption {
+  color: #f6d26f;
+}
+.hint-target .bottle-caption {
+  color: #8be6c5;
+}
+
+.board-stage[data-base="gold"] .bottle-caption {
+  transform: translateY(8px);
+}
+
+.hint-arrow {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: visible;
+  filter: drop-shadow(0 0 7px #b8efd233);
+}
+.hint-arrow path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hint-arrow-shadow {
+  stroke: #14111ee0;
+  stroke-width: 8;
+}
+.hint-arrow-line {
+  stroke: url(#hint-arrow-gradient);
+  stroke-width: 3.5;
+}
+.hint-arrow-flow {
+  stroke: #ffffffc0;
+  stroke-width: 3;
+  stroke-dasharray: 1 29;
+  animation: hint-flow 1.7s linear infinite;
+}
+@keyframes hint-flow {
+  to {
+    stroke-dashoffset: -30;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hint-arrow-flow {
+    animation: none;
+    display: none;
+  }
+}
